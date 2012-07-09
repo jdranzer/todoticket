@@ -1,0 +1,358 @@
+<?php
+	session_start();
+	if (!(isset($_SESSION['username']) && $_SESSION['username'] != '' && $_SESSION['username'] != 'admin'))
+	{
+		header ("Location: ../index.php");
+	}
+		$user_logged = $_SESSION['username'];
+		$reg_unique = date('YmdHis');
+?>
+
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <title>TodoTicket.com</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="">
+        <meta name="author" content="">
+
+        <!-- Le styles -->
+        <link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
+        <style type="text/css">
+            body {
+                padding-top: 60px;
+                padding-bottom: 40px;
+            }
+        </style>
+        <link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+
+        <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+        <!--[if lt IE 9]>
+        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+
+        <!-- Le fav and touch icons -->
+        <link rel="shortcut icon" href="../bootstrap/ico/favicon.ico">
+    </head>
+    
+    <body>
+        
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container-fluid">
+                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </a>
+                    <a class="brand" href="#">TodoTicket.com</a>
+                    <div class="btn-group pull-right">
+                        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+                            <i class="icon-user"></i> <?php echo $user_logged; ?>
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="modificar_perfil.php">Perfil</a></li>
+                            <li class="divider"></li>
+                            <li><a href="logout.php">Log Out</a></li>
+                        </ul>
+                    </div>
+                    <div class="nav-collapse">
+                        <ul class="nav">
+                            <li><a href="panel.php">Panel de Usuario</a></li>
+                            <li class="active"><a href="#">Elegir Tarjeta de Crédito</a></li>
+                        </ul>
+                    </div><!--/.nav-collapse -->
+                </div>
+            </div>
+        </div>
+        
+		<div class="container-fluid">
+			<div class="row-fluid">
+			    <div class="span3">
+		        	<div class="well sidebar-nav">
+		            	<ul class="nav nav-list">
+							<li class="nav-header">Menú Principal</li>
+							<li><a href="panel.php">Panel Principal</a></li>
+							<li><a href="modificar_perfil.php">Modificar Perfil</a></li>
+							<li><a href="historial_compras.php">Historial de Compras</a></li>
+							<li><a href="catalogo_eventos.php">Catálogo de Eventos</a></li>
+							<li><a href="busqueda.php">Búsqueda</a></li>
+							<li><a href="reservar.php">Reserva de Boletos</a></li>
+							<li><a href="carrito.php">Carrito de Compras</a></li>
+							<li class="active"><a href="#">&rarr; Elegir Tarjeta</a></li>
+						</ul>
+					</div><!--/.well -->
+			    </div><!--/span-->
+			    
+				<!--area para issets-->
+			    
+			    <div class="span9 columns">
+				<h2>Elija una tarjeta de crédito</h2>
+				<p>Detalle de tarjetas registradas por el cliente.</p>
+				<hr>
+				<div class="row-fluid">
+					<div class="span8">
+						<?php
+							$conn = oci_connect('dranzer','fabulousmax', 'localhost/XE');
+							if($conn)
+							{
+								//recuperar id_cliente
+								$query = "SELECT * FROM CLIENTE WHERE USUARIO ='$user_logged'";
+								$stid = oci_parse($conn, $query);
+								oci_execute($stid);
+								if($row = oci_fetch_array($stid, OCI_BOTH))
+								{
+									$id_cliente = $row['ID_CLIENTE'];
+								
+									//recorrer tarjetas
+									$query2 = "SELECT * FROM TARJETA_CREDITO WHERE ID_CLIENTE ='$id_cliente'";
+									$stid2 = oci_parse($conn, $query2);
+									oci_execute($stid2);
+									?>
+									<form class="form-horizontal" method="POST">
+										<fieldset>
+											<div class="control-group">
+												<label class="control-label">Elija una Tarjeta</label>
+												<div class="controls">
+													<select class="span4" name="tarjeta">
+														<?php
+														$num_tarjetas = 0;
+														while($row2 = oci_fetch_array($stid2, OCI_BOTH))
+														{
+															$num_tarjetas = $num_tarjetas + 1;
+															$id_tarjeta = $row2['ID_TARJETA'];
+															$numero = $row2['NUMERO'];
+															$id_tipo_tarjeta = $row2['ID_TIPO_TARJETA'];
+															//echo "<option value=\"$id_tarjeta\">$numero [$id_tipo_tarjeta]</option>";
+															echo "<option value=\"".$row2['ID_TARJETA']."\"> $id_tarjeta</option>";
+														}
+														oci_close($conn);
+														?>
+													</select>
+												</div>
+											</div>
+										</fieldset>
+									</form>
+									<?php
+									
+									//if($num_tarjetas<1)
+									//{
+										echo "<form class=\"form-horizontal\" method=\"post\"><fieldset>";
+										?>
+										<div class="control-group">
+											<label class="control-label">Número</label>
+											<div class="controls">
+												<input type="text" class="input-xlarge" name="numero">
+											</div>
+										</div>
+										<div class="control-group">
+											<label class="control-label">Pin</label>
+											<div class="controls">
+												<input type="text" class="input-xlarge" name="pin">
+											</div>
+										</div>
+										<div class="control-group">
+											<label class="control-label">Tipo de Tarjeta</label>
+											<div class="controls">
+												<select class="span6" name="tipo_tarjeta">
+													<?php
+													$conn = oci_connect('dranzer','fabulousmax', 'localhost/XE');
+													if($conn)
+													{
+														//recorrer tipos de tarjetas
+														$query = "SELECT * FROM TIPO_TARJETA";
+														$stid = oci_parse($conn, $query);
+														oci_execute($stid);
+														while($row = oci_fetch_array($stid, OCI_BOTH))
+														{
+															$nm = $row['NOMBRE'];
+															$tp = $row['TIPO'];
+															echo "<option value=\"".$row['ID_TIPO_TARJETA']."\">$nm ($tp)</option>";
+														}
+													}oci_close($conn);
+													?>
+												</select>
+											</div>
+										</div>
+										<div class="control-group">
+											<div class="controls">
+												<input type="submit" name="crear_tarjeta" class="btn btn-primary btn-large" value="Crear Tarjeta" />
+											</div>
+										</div>
+										<?php
+										echo "</fieldset></form>";
+										
+										if(isset($_POST['crear_tarjeta']))
+										{
+											$conn = oci_connect('dranzer','fabulousmax', 'localhost/XE');
+											if($conn)
+											{
+												//recuperar id_cliente
+												$query = "SELECT * FROM CLIENTE WHERE USUARIO ='$user_logged'";
+												$stid = oci_parse($conn, $query);
+												oci_execute($stid);
+												if($row = oci_fetch_array($stid, OCI_BOTH))
+												{
+													$id_cliente = $row['ID_CLIENTE'];
+													$numero = $_POST['numero'];
+													$pin = $_POST['pin'];
+													$id_tipo_tarjeta = $_POST['tipo_tarjeta'];
+													
+													//Insertar
+													$result = oci_parse($conn, "BEGIN PROC_INSERTAR_NEWCREDITCARD(
+																	'$numero', 
+																	'$pin',
+																	'$id_cliente',
+																	'$id_tipo_tarjeta'
+																	);
+																end;");
+													$insertado=oci_execute($result);
+													if ($insertado) 
+													{
+														//registrar en bitacora
+														$registro = oci_parse($conn, "BEGIN PROC_INSERTAR_BITACORA('cliente','$user_logged','".date('d/m/Y')."','Se ha creado una nueva tarjeta con numero: $numero.'); END;");
+														$registrado = oci_execute($registro);
+														?>
+														<div class="alert alert-block alert-info fade in span5">
+															<button type="button" class="close" data-dismiss="alert">×</button>
+															<h4 class="alert-heading">¡Enhorabuena!.</h4>
+															<p>Tarjeta creada con éxito.</p>
+														</div>
+														<?php
+													}else
+													{
+														?>
+														<div class="alert alert-block alert-error fade in span5">
+															<button type="button" class="close" data-dismiss="alert">×</button>
+															<h4 class="alert-heading">¡Ups! Ha habido un error.</h4>
+															<p>El registro no pudo ser ingresado a la base de datos.</p>
+														</div>
+														<?php
+													}
+												}
+											}oci_close($conn);
+										}
+										if(isset($_POST['comprar_commit']))
+										{
+											$conn = oci_connect('dranzer','fabulousmax', 'localhost/XE');
+											if($conn)
+											{
+												//recuperar id_cliente
+												$query = "SELECT * FROM CLIENTE WHERE USUARIO ='$user_logged'";
+												$stid = oci_parse($conn, $query);
+												oci_execute($stid);
+												if($row = oci_fetch_array($stid, OCI_BOTH))
+												{
+													$id_cliente = $row['ID_CLIENTE'];
+													//recorrer carrito
+													$iquery = oci_parse($conn, "SELECT * FROM CARRITO WHERE ID_CLIENTE = '$id_cliente'");
+													oci_execute($iquery);
+													while ($irow = oci_fetch_array($iquery, OCI_BOTH))
+													{
+														//generar registro de compra
+														$id_tarjeta = $_POST['id_tarjeta2'];
+														//echo "~".$id_tarjeta;
+														//posicion reg_unique
+														//$registro = oci_parse($conn, "BEGIN PROC_INSERTAR_COMPRA('$id_cliente','".date('d/m/Y')."','$reg_unique','0','$id_tarjeta'); END;");
+														$registro = oci_parse($conn, "BEGIN PROC_INSERTAR_COMPRA('$id_cliente','".date('d/m/Y')."','$reg_unique','0','$id_tarjeta'); END;");
+														$registrado = oci_execute($registro);
+														
+														$id_evento = $irow['ID_EVENTO'];
+														$cantidad = $irow['CANTIDAD'];
+														
+														//devolver precio evento
+														$query1 = oci_parse($conn, "SELECT * FROM EVENTO WHERE ID_EVENTO = '$id_evento'");
+														oci_execute($query1);
+														$row1 = oci_fetch_array($query1, OCI_BOTH);
+														$precio = $row1['PRECIO'];
+														$lim_asistentes = $row1['LIMITE_ASISTENTES'];
+														$precio = $precio + (0.03*$precio);
+														
+														//
+														
+														//obtener id_compra
+														$queryc = "SELECT * FROM COMPRA WHERE IDENTIFIER_UNIQUE ='$reg_unique'";
+														$stidc = oci_parse($conn, $queryc);
+														oci_execute($stidc);
+														$rowc = oci_fetch_array($stidc, OCI_BOTH);
+														
+														$id_compra = $rowc['ID_COMPRA'];
+														
+														//generar boleto n cantidad de veces
+														//echo "[".$id_cliente."_".$id_evento."_".$precio."_".$id_compra."_".$reg_unique."_".$id_tarjeta."]";
+														
+														for($i = 0; $i < $cantidad; $i++)
+														{
+															$registrob = oci_parse($conn, "BEGIN PROC_INSERTAR_BOLETO('$id_evento','$precio','$id_compra'); END;");
+															$registradob = oci_execute($registrob);
+														}
+														$lim_asistentes = $lim_asistentes - $cantidad;
+														$precio = $precio * $cantidad;
+														//actualizar contador en evento
+														$registro2 = oci_parse($conn, "BEGIN PROC_ACTUALIZAR_NUM_EVENTO('$id_evento','$lim_asistentes'); END;");
+														$registrado2 = oci_execute($registro2);
+														//actualizar total de compra
+														$registro3 = oci_parse($conn, "BEGIN PROC_ACTUALIZAR_TOTALCOMPRA('$reg_unique','$precio'); END;");
+														$registrado3 = oci_execute($registro3);
+														//bitacora
+														$registro4 = oci_parse($conn, "BEGIN PROC_INSERTAR_BITACORA('cliente','$user_logged','".date('d/m/Y')."','Se ha confirmado la compra con ID: $id_compra [$reg_unique].'); END;");
+														$registrado4 = oci_execute($registro4);
+														echo "Transacción exitosa.";
+														
+													}
+												}
+											}oci_close($conn);
+										}
+									//}
+								}
+							}oci_close($conn);
+						?>
+					</div><!--/span-->
+					<div class="span4">
+						<form method="POST" action="">
+							<p>
+								<input type="text" class="input-small" name="id_tarjeta2">
+							</p>
+							<p>
+								<input type="submit" name="comprar_commit" class="btn btn-success btn-large" value="Comprar &raquo;" />
+							</p>
+						</form>
+					</div><!--/span-->
+					<div class="span4">
+						<form method="POST" action="confirmacion.php?reg_unique=<?php echo $reg_unique; ?>">
+							<p>
+								<input type="submit" name="comprar_commit" class="btn btn-success btn-large" value="Ver Comprobante &raquo;" />
+							</p>
+						</form>
+					</div><!--/span-->
+				</div><!--/span-->
+			</div><!--/row-->
+			</div><!--/row-->
+	   		<hr>
+
+		   	<footer>
+		    	<p>&copy; TodoTicket.com 2012</p>
+		 	</footer>
+        </div><!--/.fluid-container-->
+        
+        <!-- Le javascript
+        ================================================== -->
+        <!-- Placed at the end of the document so the pages load faster -->
+        <script src="../bootstrap/js/jquery.js"></script>
+        <script src="../bootstrap/js/bootstrap-transition.js"></script>
+        <script src="../bootstrap/js/bootstrap-alert.js"></script>
+        <script src="../bootstrap/js/bootstrap-modal.js"></script>
+        <script src="../bootstrap/js/bootstrap-dropdown.js"></script>
+        <script src="../bootstrap/js/bootstrap-scrollspy.js"></script>
+        <script src="../bootstrap/js/bootstrap-tab.js"></script>
+        <script src="../bootstrap/js/bootstrap-tooltip.js"></script>
+        <script src="../bootstrap/js/bootstrap-popover.js"></script>
+        <script src="../bootstrap/js/bootstrap-button.js"></script>
+        <script src="../bootstrap/js/bootstrap-collapse.js"></script>
+        <script src="../bootstrap/js/bootstrap-carousel.js"></script>
+        <script src="../bootstrap/js/bootstrap-typeahead.js"></script>
+
+    </body>
+</html>

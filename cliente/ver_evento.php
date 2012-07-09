@@ -1,0 +1,244 @@
+<?php
+	session_start();
+	if (!(isset($_SESSION['username']) && $_SESSION['username'] != '' && $_SESSION['username'] != 'admin'))
+	{
+		header ("Location: ../index.php");
+	}
+		$user_logged = $_SESSION['username'];
+?>
+
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <title>TodoTicket.com</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="">
+        <meta name="author" content="">
+
+        <!-- Le styles -->
+        <link href="../bootstrap/css/bootstrap.css" rel="stylesheet">
+        <style type="text/css">
+            body {
+                padding-top: 60px;
+                padding-bottom: 40px;
+            }
+        </style>
+        <link href="../bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+
+        <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+        <!--[if lt IE 9]>
+        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+
+        <!-- Le fav and touch icons -->
+        <link rel="shortcut icon" href="../bootstrap/ico/favicon.ico">
+    </head>
+    
+    <body>
+        
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container-fluid">
+                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </a>
+                    <a class="brand" href="#">TodoTicket.com</a>
+                    <div class="btn-group pull-right">
+                        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+                            <i class="icon-user"></i> <?php echo $user_logged; ?>
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="modificar_perfil.php">Perfil</a></li>
+                            <li class="divider"></li>
+                            <li><a href="logout.php">Log Out</a></li>
+                        </ul>
+                    </div>
+                    <div class="nav-collapse">
+                        <ul class="nav">
+                            <li><a href="panel.php">Panel de Usuario</a></li>
+                            <li class="active"><a href="#">Catálogo de Eventos</a></li>
+                        </ul>
+                    </div><!--/.nav-collapse -->
+                </div>
+            </div>
+        </div>
+        
+		<div class="container-fluid">
+			<div class="row-fluid">
+			    <div class="span3">
+		        	<div class="well sidebar-nav">
+		            	<ul class="nav nav-list">
+							<li class="nav-header">Menú Principal</li>
+							<li><a href="panel.php">Panel Principal</a></li>
+							<li><a href="modificar_perfil.php">Modificar Perfil</a></li>
+							<li><a href="historial_compras.php">Historial de Compras</a></li>
+							<li><a href="catalogo_eventos.php">Catálogo de Eventos</a></li>
+							<li class="active"><a href="#">&rarr; Ver Evento</a></li>
+							<li><a href="busqueda.php">Búsqueda</a></li>
+							<li><a href="reservar.php">Reserva de Boletos</a></li>
+							<li><a href="carrito.php">Carrito de Compras</a></li>
+						</ul>
+					</div><!--/.well -->
+			    </div><!--/span-->
+			    
+			    <div class="span9 columns">
+				<!--<h2>Ver Evento</h2>
+				<p>Información detallada</p>
+				<hr>
+				<div class="row-fluid">
+					<div class="span8">-->
+						<!--Construir tabla-->
+						<?php
+							if(isset($_POST['add_carrito']))
+							{
+								//conseguir id_cliente
+								$cantidad = $_POST['cantidad'];
+								//$id_cliente = "";
+								$id_evento = $_GET['id_ev'];
+								$conn = oci_connect('dranzer','fabulousmax', 'localhost/XE');
+								if($conn)
+								{
+									$stid = oci_parse($conn, "SELECT * FROM CLIENTE WHERE USUARIO = '$user_logged'");
+									oci_execute($stid);
+									if($cantidad > 0){
+										if($row = oci_fetch_array($stid, OCI_BOTH))
+										{
+											$id_cliente = $row['ID_CLIENTE'];
+											//echo $id_cliente."-".$id_evento."-".$cantidad;
+											//insertar en carrito
+											$result = oci_parse($conn, "BEGIN PROC_INSERTAREN_CARRITO('$id_cliente','$id_evento','$cantidad'); END;");
+											$insertado = oci_execute($result);
+											if ($insertado) 
+											{
+												//registrar en bitacora
+													$registro = oci_parse($conn, "BEGIN PROC_INSERTAR_BITACORA('cliente','$user_logged','".date('d/m/Y')."','Se ha insertado un evento al carrito de: $user_logged [$id_evento : $cantidad].'); END;");
+													$registrado = oci_execute($registro);
+												?>
+												<div class="alert alert-block alert-info fade in span5">
+													<button type="button" class="close" data-dismiss="alert">×</button>
+													<h4 class="alert-heading">¡Enhorabuena!.</h4>
+													<p>Boletos añadidos al carrito con éxito.</p>
+												</div>
+												<?php
+											}else
+											{
+												?>
+												<div class="alert alert-block alert-error fade in span5">
+													<button type="button" class="close" data-dismiss="alert">×</button>
+													<h4 class="alert-heading">¡Ups! Ha habido un error.</h4>
+													<p>No se pudo completar la operación.</p>
+												</div>
+												<?php
+											}
+										}
+									}else
+									{
+										?>
+										<div class="alert alert-block alert-error fade in span5">
+											<button type="button" class="close" data-dismiss="alert">×</button>
+											<h4 class="alert-heading">¡Ups! Ha habido un error.</h4>
+											<p>Debes ingresar una cantidad de boletos de al menos 1.</p>
+										</div>
+										<?php
+									}
+								}
+							}
+							
+							
+							$id_evento_selected = $_GET['id_ev'];
+							$conn = oci_connect('dranzer','fabulousmax', 'localhost/XE');
+							if($conn)
+							{
+								$stid = oci_parse($conn, "SELECT * FROM EVENTO WHERE ID_EVENTO = '$id_evento_selected'");
+								oci_execute($stid);
+								
+								while (($row = oci_fetch_array($stid, OCI_BOTH))) {
+								
+									?>
+										<h1><?php echo $row['NOMBRE']; ?></h1>
+										<hr>
+										<div class="row-fluid">
+											<div class="span8">
+												<ul id="myTab" class="nav nav-tabs">
+													<li class="active"><a href="#info" data-toggle="tab">Info</a></li>
+													<li><a href="#artistas" data-toggle="tab">Artistas</a></li>
+												</ul>
+												<div id="myTabContent" class="tab-content">
+													<div class="tab-pane fade in active" id="info">
+														<p>Info.</p>
+														<p>Inicia: <?php echo $row['FECHA_INICIO']; ?><p>
+														<p>Finaliza: <?php echo $row['FECHA_FIN']; ?><p>
+														<p>Precio: Q<?php $r=$row['PRECIO']; $s=$r+(0.03*$r); echo $s; ?><p>
+														<p>Duración: <?php echo $row['DURACION_DIAS']; ?> día(s)<p>
+													</div>
+													<div class="tab-pane fade" id="artistas">
+														<p>Info.</p>
+														<!--Imágenes-->
+														<div class="row">
+															<div class="span5">
+																<ul class="media-grid">
+																		<li><a href="#"><img src="images/pink-floyd_1.jpg" alt="" /></a></li>
+																	</ul>
+															</div>
+														</div>
+														<!--Imágenes-->
+													</div>
+												</div>
+									<?php
+								}
+								oci_free_statement($stid);
+								oci_close($conn);
+							}
+						
+						?>
+					</div><!--/span8-->
+					
+					<div class="span4">
+					<form method="POST">
+						<p>
+							Cantidad: <input type="text" class="input-small" name="cantidad" value="1">
+						</p>
+						<p>
+							<input type="submit" name="add_carrito" class="btn btn-success btn-large" value="Añadir al Carrito &raquo;" />
+						</p>
+					</div><!--/span-->
+					<div class="span4">
+						<p>
+							<input type="submit" name="reservar" class="btn btn-large" value="Reservar &raquo;" />
+						</p>
+						</form>
+					</div><!--/span-->
+			</div><!--/span-->	
+			</div><!--/row-->
+			    
+			</div><!--/row-->
+	   		<hr>
+
+		   	<footer>
+		    	<p>&copy; TodoTicket.com 2012</p>
+		 	</footer>
+        </div><!--/.fluid-container-->
+        
+        <!-- Le javascript
+        ================================================== -->
+        <!-- Placed at the end of the document so the pages load faster -->
+        <script src="../bootstrap/js/jquery.js"></script>
+        <script src="../bootstrap/js/bootstrap-transition.js"></script>
+        <script src="../bootstrap/js/bootstrap-alert.js"></script>
+        <script src="../bootstrap/js/bootstrap-modal.js"></script>
+        <script src="../bootstrap/js/bootstrap-dropdown.js"></script>
+        <script src="../bootstrap/js/bootstrap-scrollspy.js"></script>
+        <script src="../bootstrap/js/bootstrap-tab.js"></script>
+        <script src="../bootstrap/js/bootstrap-tooltip.js"></script>
+        <script src="../bootstrap/js/bootstrap-popover.js"></script>
+        <script src="../bootstrap/js/bootstrap-button.js"></script>
+        <script src="../bootstrap/js/bootstrap-collapse.js"></script>
+        <script src="../bootstrap/js/bootstrap-carousel.js"></script>
+        <script src="../bootstrap/js/bootstrap-typeahead.js"></script>
+
+    </body>
+</html>
